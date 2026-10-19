@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="black">
+<head>
+  <meta charset="utf-8">
+  <title>RETRO Studio</title>
+  <link rel="stylesheet" href="../../node_modules/@fontsource/jetbrains-mono/400.css">
+  <link rel="stylesheet" href="../../node_modules/@fontsource/jetbrains-mono/600.css">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div id="splash">
+    <div class="spark"></div>
+    <strong>RETRO Studio</strong>
+  </div>
+  <div id="app" class="no-grok">
+    <nav id="menubar" class="menubar" aria-label="Menu"></nav>
+    <header class="toolbar">
+      <div class="brand"><span class="spark small"></span><span>RETRO</span><span class="dim">Studio</span></div>
+      <button type="button" data-cmd="project.open" title="Open folder (Ctrl+O)">Open</button>
+      <button type="button" data-cmd="file.save" title="Save (Ctrl+S)">Save</button>
+      <span class="rule"></span>
+      <select id="target" title="Machine">
+        <option value="c64">C64</option>
+        <option value="apple2">Apple II</option>
+        <option value="ti99">TI-99/4A</option>
+      </select>
+      <select id="run-mode" title="What Run executes for a MAGIC file">
+        <option value="host">Host screen</option>
+        <option value="basic">BASIC</option>
+        <option value="asm">Assembly</option>
+      </select>
+      <button type="button" class="primary" data-cmd="run.start" title="Run (Shift+F10)">Run</button>
+      <button type="button" data-cmd="run.check" title="Check (Ctrl+F9)">Check</button>
+      <button type="button" id="run-stop" data-cmd="run.stop" title="Stop (Ctrl+F2)">Stop</button>
+      <span id="crumb" class="crumb"></span>
+    </header>
+    <div class="body">
+      <nav class="activity">
+        <button type="button" data-side="explorer" title="Explorer (Alt+1)" aria-label="Explorer">
+          <svg viewBox="0 0 24 24"><path d="M4 6h6l2 2h8v10H4z"/></svg>
+        </button>
+        <button type="button" data-side="search" title="Search (Alt+3)" aria-label="Search">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M16 16l4 4"/></svg>
+        </button>
+        <button type="button" data-side="outline" title="Structure (Alt+7)" aria-label="Structure">
+          <svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h10M5 18h12"/></svg>
+        </button>
+      </nav>
+      <aside class="sidebar" id="sidebar">
+        <div id="side-explorer" class="side-view">
+          <div class="side-head">
+            <strong>Explorer</strong>
+            <button type="button" data-cmd="project.examples" title="Open RETRO-MAGIC examples">Examples</button>
+          </div>
+          <input id="tree-filter" spellcheck="false" placeholder="Filter files">
+          <div id="tree" tabindex="0"></div>
+        </div>
+        <div id="side-search" class="side-view" hidden>
+          <div class="side-head"><strong>Find in files</strong></div>
+          <input id="search-query" spellcheck="false" placeholder="Search">
+          <div id="search-results"></div>
+        </div>
+        <div id="side-outline" class="side-view" hidden>
+          <div class="side-head"><strong>Structure</strong></div>
+          <div id="outline"></div>
+        </div>
+        <div id="split-side" class="split x"></div>
+      </aside>
+      <main>
+        <div id="tabs"></div>
+        <div id="editor-wrap">
+          <div id="editor"></div>
+          <div id="welcome">
+            <div class="welcome-card">
+              <div class="brand large"><span class="spark"></span><span>RETRO Studio</span></div>
+              <p>Alpha. MAGIC, BASIC, and assembly for the C64, the Apple II, and the TI-99/4A. An emoji in a sprite becomes a picture. The Apple II plots that picture in lo-res.</p>
+              <div class="welcome-actions">
+                <button type="button" class="primary" data-cmd="project.open">Open folder</button>
+                <button type="button" data-cmd="file.new">New file</button>
+                <button type="button" data-cmd="project.examples">RETRO-MAGIC examples</button>
+              </div>
+              <div id="recent"></div>
+            </div>
+          </div>
+        </div>
+        <section id="bottom">
+          <div id="split-bottom" class="split y"></div>
+          <div class="tool-tabs">
+            <button type="button" data-bottom="run">Run</button>
+            <button type="button" data-bottom="screen">Screen</button>
+            <button type="button" data-bottom="listing">Listing</button>
+            <button type="button" data-bottom="problems">Problems <span id="problem-count" hidden></span></button>
+            <button type="button" data-bottom="terminal">Terminal</button>
+          </div>
+          <div id="bottom-body">
+            <div id="run-view" class="tool-view">
+              <div class="tool-bar">
+                <span id="run-title">Ready</span>
+                <span id="run-status" data-state="idle">idle</span>
+                <button type="button" id="run-clear">Clear</button>
+              </div>
+              <pre id="run-log"></pre>
+            </div>
+            <div id="screen-view" class="tool-view" hidden>
+              <div id="screen-caption"></div>
+              <div id="screen-stage"><canvas id="screen-canvas"></canvas></div>
+            </div>
+            <div id="listing-view" class="tool-view" hidden>
+              <div class="tool-bar">
+                <select id="listing-kind" title="Listing">
+                  <option value="basic">BASIC</option>
+                  <option value="asm">Assembly</option>
+                </select>
+                <span id="listing-note"></span>
+                <button type="button" id="listing-edit">Edit listing</button>
+              </div>
+              <pre id="listing-text"></pre>
+            </div>
+            <div id="problems-view" class="tool-view" hidden>
+              <div id="problems-list"></div>
+            </div>
+            <div id="terminal-view" class="tool-view" hidden>
+              <pre id="term-log"></pre>
+              <form id="term-form">
+                <input id="term-input" spellcheck="false" placeholder="Pipe shell. Enter runs a line.">
+                <button type="submit">Send</button>
+              </form>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+    <footer class="status">
+      <button type="button" id="status-problems">No problems</button>
+      <span class="grow"></span>
+      <button type="button" id="status-theme" data-cmd="view.theme" title="Toggle black and light. Starts black.">Black</button>
+      <button type="button" id="status-line">1:1</button>
+      <span id="status-lang">—</span>
+      <span id="status-machine">C64</span>
+      <span>pipe</span>
+      <span>UTF-8</span>
+    </footer>
+  </div>
+  <div id="palette" hidden>
+    <div class="palette-card">
+      <input id="palette-input" spellcheck="false" placeholder="Type a command">
+      <div id="palette-list"></div>
+    </div>
+  </div>
+  <div id="modal" hidden></div>
+  <div id="toasts"></div>
+  <script src="../../node_modules/monaco-editor/min/vs/loader.js"></script>
+  <script src="./boot.js"></script>
+</body>
+</html>

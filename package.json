@@ -1,0 +1,32 @@
+{
+  "name": "retro-studio",
+  "productName": "RETRO Studio",
+  "version": "0.1.0",
+  "description": "Alpha. A dark IDE for RETRO-MAGIC, BASIC, and assembly on the C64, Apple II, and TI-99/4A.",
+  "author": {
+    "name": "Mira (The White Witch™)",
+    "email": "thewhitewitchtm@google.com",
+    "url": "https://x.com/TheWhiteWitchTM"
+  },
+  "private": true,
+  "type": "module",
+  "main": "src/main.js",
+  "scripts": {
+    "prestart": "npm run build --prefix ../RETRO-MAGIC",
+    "start": "electron .",
+    "smoke": "node scripts/smoke.mjs",
+    "test": "npm run smoke"
+  },
+  "dependencies": {
+    "@fontsource/jetbrains-mono": "^5.2.6",
+    "monaco-editor": "^0.52.2",
+    "retro-magic": "file:../RETRO-MAGIC"
+  },
+  "devDependencies": {
+    "electron": "^33.4.11"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}

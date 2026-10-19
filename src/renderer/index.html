@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>RETRO Studio</title>
+  <link rel="stylesheet" href="../../node_modules/@xterm/xterm/css/xterm.css">
   <link rel="stylesheet" href="../../node_modules/@fontsource/jetbrains-mono/400.css">
   <link rel="stylesheet" href="../../node_modules/@fontsource/jetbrains-mono/600.css">
   <link rel="stylesheet" href="./styles.css">
@@ -19,19 +20,22 @@
       <button type="button" data-cmd="project.open" title="Open folder (Ctrl+O)">Open</button>
       <button type="button" data-cmd="file.save" title="Save (Ctrl+S)">Save</button>
       <span class="rule"></span>
+      <select id="run-config" title="Run configuration"></select>
+      <input id="run-custom" hidden spellcheck="false" placeholder="shell command">
       <select id="target" title="Machine">
         <option value="c64">C64</option>
         <option value="apple2">Apple II</option>
         <option value="ti99">TI-99/4A</option>
       </select>
-      <select id="run-mode" title="What Run executes for a MAGIC file">
+      <select id="run-mode" title="What Run does with a MAGIC file">
         <option value="host">Host screen</option>
         <option value="basic">BASIC</option>
         <option value="asm">Assembly</option>
       </select>
       <button type="button" class="primary" data-cmd="run.start" title="Run (Shift+F10)">Run</button>
-      <button type="button" data-cmd="run.check" title="Check (Ctrl+F9)">Check</button>
+      <button type="button" data-cmd="run.screen" title="Machine screen (Ctrl+Shift+F10)">Screen</button>
       <button type="button" id="run-stop" data-cmd="run.stop" title="Stop (Ctrl+F2)">Stop</button>
+      <button type="button" data-cmd="run.check" title="Check (Ctrl+F9)">Check</button>
       <span id="crumb" class="crumb"></span>
     </header>
     <div class="body">
@@ -50,7 +54,7 @@
         <div id="side-explorer" class="side-view">
           <div class="side-head">
             <strong>Explorer</strong>
-            <button type="button" data-cmd="project.examples" title="Open RETRO-MAGIC examples">Examples</button>
+            <label class="check quiet" title="Show hidden files"><input id="hidden-toggle" type="checkbox">Hidden</label>
           </div>
           <input id="tree-filter" spellcheck="false" placeholder="Filter files">
           <div id="tree" tabindex="0"></div>
@@ -58,6 +62,11 @@
         <div id="side-search" class="side-view" hidden>
           <div class="side-head"><strong>Find in files</strong></div>
           <input id="search-query" spellcheck="false" placeholder="Search">
+          <input id="search-include" spellcheck="false" placeholder="Include, for example *.magic">
+          <div class="side-options">
+            <label class="check"><input id="search-case" type="checkbox">Match case</label>
+            <label class="check"><input id="search-regex" type="checkbox">Regex</label>
+          </div>
           <div id="search-results"></div>
         </div>
         <div id="side-outline" class="side-view" hidden>
@@ -70,13 +79,18 @@
         <div id="tabs"></div>
         <div id="editor-wrap">
           <div id="editor"></div>
+          <div id="image-view" hidden></div>
+          <div id="empty" hidden>
+            <p>No file open.</p>
+            <p class="dim">Ctrl+P opens a file. Shift+F10 runs the current one.</p>
+          </div>
           <div id="welcome">
             <div class="welcome-card">
               <div class="brand large"><span class="spark"></span><span>RETRO Studio</span></div>
-              <p>Alpha. MAGIC, BASIC, and assembly for the C64, the Apple II, and the TI-99/4A. An emoji in a sprite becomes a picture. The Apple II plots that picture in lo-res.</p>
+              <p>Alpha. The MAGIC Studio window, for three 8-bit machines. Edit RETRO-MAGIC, BASIC, and assembly. Run paints the C64, the Apple II, or the TI-99/4A. An emoji in a sprite becomes a picture. The Apple II plots that picture in lo-res.</p>
               <div class="welcome-actions">
                 <button type="button" class="primary" data-cmd="project.open">Open folder</button>
-                <button type="button" data-cmd="file.new">New file</button>
+                <button type="button" data-cmd="project.create">New project</button>
                 <button type="button" data-cmd="project.examples">RETRO-MAGIC examples</button>
               </div>
               <div id="recent"></div>
@@ -99,7 +113,7 @@
                 <span id="run-status" data-state="idle">idle</span>
                 <button type="button" id="run-clear">Clear</button>
               </div>
-              <pre id="run-log"></pre>
+              <div id="run-term"></div>
             </div>
             <div id="screen-view" class="tool-view" hidden>
               <div id="screen-caption"></div>
@@ -120,24 +134,27 @@
               <div id="problems-list"></div>
             </div>
             <div id="terminal-view" class="tool-view" hidden>
-              <pre id="term-log"></pre>
-              <form id="term-form">
-                <input id="term-input" spellcheck="false" placeholder="Pipe shell. Enter runs a line.">
-                <button type="submit">Send</button>
-              </form>
+              <div class="tool-bar">
+                <div id="term-tabs"></div>
+                <button type="button" id="term-new" title="New terminal">+</button>
+              </div>
+              <div id="term-host"></div>
             </div>
           </div>
         </section>
       </main>
     </div>
     <footer class="status">
+      <button type="button" id="status-branch"></button>
       <button type="button" id="status-problems">No problems</button>
       <span class="grow"></span>
       <button type="button" id="status-theme" data-cmd="view.theme" title="Toggle black and light. Starts black.">Black</button>
       <button type="button" id="status-line">1:1</button>
+      <button type="button" id="status-eol">LF</button>
+      <button type="button" id="status-indent">Spaces: 2</button>
       <span id="status-lang">—</span>
       <span id="status-machine">C64</span>
-      <span>pipe</span>
+      <span id="status-pty">PTY</span>
       <span>UTF-8</span>
     </footer>
   </div>
@@ -148,7 +165,11 @@
     </div>
   </div>
   <div id="modal" hidden></div>
+  <div id="ctx" class="ctx" hidden></div>
   <div id="toasts"></div>
+  <script src="../../node_modules/@xterm/xterm/lib/xterm.js"></script>
+  <script src="../../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
+  <script src="../../node_modules/@xterm/addon-web-links/lib/addon-web-links.js"></script>
   <script src="../../node_modules/monaco-editor/min/vs/loader.js"></script>
   <script src="./boot.js"></script>
 </body>

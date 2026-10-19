@@ -2,8 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import os from 'node:os';
 import { keywordWords, languageOf } from '../src/shared/lang.js';
-import { searchText } from '../src/services/files.js';
+import { HELLO_MAGIC, createProject, searchText } from '../src/services/files.js';
 import { runSource } from '../src/services/run.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -70,15 +71,26 @@ check('hand 6502', asmFile.ok && asmFile.halted === 'brk' && asmFile.image?.form
 const tiFile = runSource({ source: read('add.a99'), filename: 'add.a99', target: 'ti99', lang: 'asm9900' });
 check('hand 9900', tiFile.ok && tiFile.halted === 'jmp' && tiFile.image?.cpu === '9900', tiFile.asmError || tiFile.halted);
 
-const hits = searchText(examples, 'scene ok');
-check('search finds scene', hits.some((hit) => hit.file.endsWith('scene.magic')));
+const hits = await searchText({ root: examples, query: 'scene ok' });
+check('search finds scene', hits.matches.some((hit) => hit.file.endsWith('scene.magic')));
+
+const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'retro-studio-'));
+const project = await createProject(projectDir, 'sample');
+const projectHello = fs.readFileSync(project.file, 'utf8');
+const projectRun = runSource({ source: projectHello, filename: project.file, target: 'c64', lang: 'magic', mode: 'host' });
+check('new project greets', projectRun.ok && flat(projectRun.output) === 'Hello, RETRO', flat(projectRun.output));
+check('new project sprite', projectRun.screen?.sprites?.some((sprite) => sprite.emoji === '✦'));
+check('new project basic and asm', fs.existsSync(path.join(project.dir, 'hello.bas')) && fs.existsSync(path.join(project.dir, 'hello.asm')) && fs.existsSync(path.join(project.dir, 'hello.a99')));
+check('starter matches export', projectHello === HELLO_MAGIC);
 
 const html = fs.readFileSync(path.join(root, 'src/renderer/index.html'), 'utf8');
-const css = fs.readFileSync(path.join(root, 'src/renderer/styles.css'), 'utf8');
-check('studio page has no grok panel', html.includes('class="no-grok"') && !html.includes('id="grok"'));
-check('screen and listing tabs', html.includes('data-bottom="screen"') && html.includes('data-bottom="listing"') && html.includes('id="target"'));
-check('styles hide grok', css.includes('#app.no-grok'));
-check('languages named', html.includes('C64 BASIC') || fs.readFileSync(path.join(root, 'src/renderer/app.js'), 'utf8').includes('basic-c64'));
+const editor = fs.readFileSync(path.join(root, 'src/renderer/js/editor.js'), 'utf8');
+const commands = fs.readFileSync(path.join(root, 'src/renderer/js/commands.js'), 'utf8');
+check('electron shell', html.includes('RETRO Studio') && html.includes('id="menubar"') && html.includes('xterm.js') && html.includes('id="run-term"') && html.includes('class="activity"'));
+check('screen and listing tabs', html.includes('data-bottom="screen"') && html.includes('data-bottom="listing"') && html.includes('id="target"') && html.includes('TI-99/4A'));
+check('no ask panel', !html.includes('id="grok"'));
+check('basic and assembler languages', editor.includes("basic('basic-c64'") && editor.includes("asm('asm6502'") && editor.includes("asm('asm9900'"));
+check('run goes through the studio', commands.includes('runRetro') && commands.includes('paintScreen'));
 
 const display = process.env.DISPLAY || process.env.WAYLAND_DISPLAY;
 const electron = path.join(root, 'node_modules', '.bin', 'electron');

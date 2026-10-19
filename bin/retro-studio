@@ -1,0 +1,10 @@
+#!/bin/bash
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+export PATH="$HOME/.grok/bin:$PATH"
+if [ -s "$HOME/.nvm/nvm.sh" ]; then
+  export NVM_DIR="$HOME/.nvm"
+  # shellcheck disable=SC1090
+  . "$NVM_DIR/nvm.sh"
+fi
+cd "$ROOT" || exit 1
+exec "$ROOT/node_modules/.bin/electron" "$ROOT" "$@"
